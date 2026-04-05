@@ -1,0 +1,725 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tamar's Kamerknutselaar 🏠✨</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --wall: #FFB3D1;
+      --floor-bc: #FFF3B0;
+      --floor-bi: none;
+      --floor-bs: auto;
+    }
+
+    body {
+      font-family: 'Nunito', sans-serif;
+      height: 100vh;
+      overflow: hidden;
+      user-select: none;
+      background: linear-gradient(160deg, #fff5fb 0%, #f0f7ff 50%, #f0fff5 100%);
+    }
+
+    /* ── HEADER ── */
+    header {
+      height: 64px;
+      background: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 22px;
+      position: relative;
+      z-index: 100;
+      box-shadow: 0 2px 12px rgba(0,0,0,.07);
+    }
+    header::after {
+      content: '';
+      position: absolute;
+      bottom: 0; left: 0; right: 0; height: 3px;
+      background: linear-gradient(90deg, #FF6B9D, #FFD93D, #5FDB8A, #5BC8FF, #B06DFF, #FF6B9D);
+      background-size: 200%;
+      animation: slide 3s linear infinite;
+    }
+    @keyframes slide { to { background-position: 200% 0; } }
+
+    header h1 {
+      font-family: 'Fredoka One', cursive;
+      font-size: 24px;
+      background: linear-gradient(120deg, #FF6B9D, #B06DFF, #5BC8FF);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      white-space: nowrap;
+    }
+
+    .hbtns { display: flex; gap: 8px; }
+    .hbtn {
+      font-family: 'Fredoka One', cursive;
+      font-size: 14px;
+      border: none;
+      border-radius: 50px;
+      padding: 8px 16px;
+      cursor: pointer;
+      display: flex; align-items: center; gap: 5px;
+      transition: transform .15s, box-shadow .15s;
+      color: #fff;
+    }
+    .hbtn:hover { transform: translateY(-2px) scale(1.04); box-shadow: 0 6px 18px rgba(0,0,0,.13); }
+    .hbtn:active { transform: scale(.96); }
+    .hbtn-save  { background: linear-gradient(135deg,#5FDB8A,#2EC870); }
+    .hbtn-clear { background: linear-gradient(135deg,#FF9142,#FF6060); }
+    .hbtn-undo  { background: linear-gradient(135deg,#5BC8FF,#3DAEE9); }
+
+    /* ── LAYOUT ── */
+    .body { display: flex; height: calc(100vh - 64px); overflow: hidden; }
+
+    /* ── SIDEBAR ── */
+    .sidebar {
+      width: 208px; flex-shrink: 0;
+      background: #fff;
+      box-shadow: 3px 0 16px rgba(0,0,0,.06);
+      display: flex; flex-direction: column;
+      overflow-y: auto; padding: 12px; gap: 10px;
+    }
+    .sidebar::-webkit-scrollbar { width: 5px; }
+    .sidebar::-webkit-scrollbar-thumb { background: #FFD93D; border-radius: 10px; }
+
+    .tabs { display: flex; gap: 6px; }
+    .tab {
+      flex: 1; font-family: 'Fredoka One', cursive; font-size: 12.5px;
+      border: 2px solid #eee; background: #fafafa;
+      border-radius: 12px; padding: 7px 3px;
+      cursor: pointer; transition: all .2s;
+      text-align: center; color: #aaa;
+    }
+    .tab.on { background: linear-gradient(135deg,#FF6B9D,#FF9142); border-color: transparent; color: #fff; }
+
+    .tc { display: none; }
+    .tc.on { display: block; }
+
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; padding-top: 8px; }
+
+    .itn {
+      display: flex; flex-direction: column; align-items: center; gap: 3px;
+      padding: 10px 4px 8px;
+      background: #fafafa; border: 2px solid #eee; border-radius: 14px;
+      cursor: grab; font-size: 28px; line-height: 1;
+      transition: all .2s;
+    }
+    .itn:hover {
+      border-color: #FF6B9D; background: #fff5f8;
+      transform: scale(1.07);
+      box-shadow: 0 4px 14px rgba(255,107,157,.2);
+    }
+    .itn:active { cursor: grabbing; transform: scale(.94); }
+    .ilbl { font-size: 10px; font-weight: 800; color: #666; text-align: center; }
+
+    /* ── ROOM AREA ── */
+    .room-area {
+      flex: 1;
+      display: flex; align-items: center; justify-content: center;
+      padding: 24px; overflow: hidden; position: relative;
+    }
+
+    .room-wrap {
+      position: relative;
+      filter: drop-shadow(0 20px 50px rgba(0,0,0,.16));
+    }
+
+    /* Wall elements */
+    .wall-top {
+      position: absolute; top: -30px; left: -30px; right: -30px; height: 30px;
+      background: var(--wall);
+      border-radius: 8px 8px 0 0;
+      transition: background .35s;
+    }
+    .wall-left {
+      position: absolute; top: 0; bottom: 0; left: -30px; width: 30px;
+      background: var(--wall); transition: background .35s;
+    }
+    .wall-right {
+      position: absolute; top: 0; bottom: 0; right: -30px; width: 30px;
+      background: var(--wall); transition: background .35s;
+    }
+    /* Corner darken overlays */
+    .wall-top::before, .wall-top::after {
+      content: ''; position: absolute; bottom: 0; width: 30px; height: 30px;
+      background: rgba(0,0,0,.08);
+    }
+    .wall-top::before { left: 0; }
+    .wall-top::after { right: 0; }
+
+    #room {
+      position: relative;
+      width: 580px; height: 480px;
+      background-color: var(--floor-bc);
+      background-image: var(--floor-bi);
+      background-size: var(--floor-bs);
+      overflow: hidden;
+      transition: box-shadow .2s;
+    }
+    #room.dov { box-shadow: 0 0 0 4px #B06DFF inset; }
+
+    /* ── PLACED ITEMS ── */
+    .pi {
+      position: absolute;
+      font-size: 48px; line-height: 1;
+      cursor: move;
+      border: 2.5px solid transparent;
+      border-radius: 10px; padding: 3px;
+      z-index: 10;
+      display: flex; align-items: center; justify-content: center;
+      transition: border-color .15s, background .15s;
+    }
+    .pi:hover { border-color: rgba(176,109,255,.45); background: rgba(255,255,255,.5); }
+    .pi.sel { border-color: #B06DFF; background: rgba(255,255,255,.75); z-index: 20; }
+
+    @keyframes pop {
+      0%   { transform: scale(0) rotate(-15deg); opacity:0; }
+      65%  { transform: scale(1.3) rotate(6deg);  opacity:1; }
+      100% { transform: scale(1) rotate(0deg);   opacity:1; }
+    }
+    .pop { animation: pop .38s cubic-bezier(.34,1.56,.64,1) forwards; }
+
+    /* ── DRAG GHOST ── */
+    #ghost {
+      position: fixed; pointer-events: none;
+      font-size: 54px; z-index: 9999;
+      transform: translate(-50%,-50%);
+      display: none;
+      filter: drop-shadow(0 8px 20px rgba(0,0,0,.25));
+      animation: gb .4s ease infinite alternate;
+    }
+    @keyframes gb {
+      from { transform: translate(-50%,-50%) scale(1);    }
+      to   { transform: translate(-50%,-50%) scale(1.1);  }
+    }
+
+    /* ── CONFETTI ── */
+    @keyframes cftfly {
+      from { transform: translateY(0) rotate(0)   scale(1);  opacity:1; }
+      to   { transform: translateY(-130px) rotate(540deg) scale(.4); opacity:0; }
+    }
+    .cft { position:fixed; pointer-events:none; z-index:9998; font-size:22px; animation: cftfly 1.1s ease forwards; }
+
+    /* ── RIGHT PANEL ── */
+    .right {
+      width: 172px; flex-shrink: 0;
+      background: #fff;
+      box-shadow: -3px 0 16px rgba(0,0,0,.06);
+      overflow-y: auto; padding: 13px 11px;
+      display: flex; flex-direction: column; gap: 13px;
+    }
+    .right::-webkit-scrollbar { width: 5px; }
+    .right::-webkit-scrollbar-thumb { background: #B06DFF; border-radius: 10px; }
+
+    .sec h4 { font-family:'Fredoka One',cursive; font-size:13.5px; color:#444; margin-bottom:7px; }
+
+    .cgrid { display: grid; grid-template-columns: repeat(4,1fr); gap: 5px; }
+    .csw {
+      aspect-ratio: 1; border-radius: 7px; cursor: pointer;
+      border: 3px solid transparent; transition: transform .15s, border-color .15s;
+    }
+    .csw:hover, .csw.on { transform: scale(1.15); border-color: #2D2A5E; }
+
+    .pgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+    .psw {
+      height: 42px; border-radius: 8px; cursor: pointer;
+      border: 3px solid #eee; transition: all .15s;
+      position: relative; overflow: hidden;
+    }
+    .psw span {
+      position: absolute; bottom: 2px; left:0; right:0;
+      text-align: center; font-size: 9px; font-weight: 800;
+      color: rgba(0,0,0,.55); font-family:'Nunito',sans-serif;
+      pointer-events: none;
+    }
+    .psw:hover, .psw.on { border-color: #2D2A5E; transform: scale(1.05); }
+
+    .div {
+      height: 2px; border-radius: 10px;
+      background: linear-gradient(90deg, #FF6B9D, #FFD93D, #5BC8FF, #B06DFF);
+    }
+
+    .cbtn {
+      display: flex; align-items: center; gap: 6px;
+      width: 100%; font-family:'Fredoka One',cursive; font-size: 12.5px;
+      border: none; border-radius: 10px; padding: 8px 10px;
+      cursor: pointer; color: #fff; margin-bottom: 5px;
+      transition: transform .15s, box-shadow .15s;
+    }
+    .cbtn:hover { transform: translateX(2px) scale(1.02); box-shadow: 0 4px 12px rgba(0,0,0,.12); }
+    .cbtn:active { transform: scale(.96); }
+    .cb-del { background: linear-gradient(135deg,#FF6060,#FF9142); }
+    .cb-rot { background: linear-gradient(135deg,#5BC8FF,#3DAEE9); }
+    .cb-big { background: linear-gradient(135deg,#5FDB8A,#2EC870); }
+    .cb-sml { background: linear-gradient(135deg,#FFD93D,#FF9142); }
+
+    #selpanel { display: none; }
+
+    .tip {
+      font-size: 10.5px; color: #bbb; font-weight: 700;
+      text-align: center; background: #f8f8f8;
+      border-radius: 10px; padding: 8px; line-height: 1.5;
+    }
+    .tip strong { color: #999; }
+  </style>
+</head>
+<body>
+
+<!-- Drag Ghost -->
+<div id="ghost"></div>
+
+<!-- Header -->
+<header>
+  <h1>🏠✨ Tamar's Kamerknutselaar</h1>
+  <div class="hbtns">
+    <button class="hbtn hbtn-undo"  onclick="undo()">↩️ Ongedaan</button>
+    <button class="hbtn hbtn-clear" onclick="clearRoom()">🗑️ Leegmaken</button>
+    <button class="hbtn hbtn-save"  onclick="saveRoom()">💾 Opslaan</button>
+  </div>
+</header>
+
+<div class="body">
+
+  <!-- ── LEFT SIDEBAR ── -->
+  <div class="sidebar">
+    <div class="tabs">
+      <button class="tab on"  onclick="switchTab('furn',this)">🛏️ Meubels</button>
+      <button class="tab"     onclick="switchTab('deco',this)">🌟 Deco</button>
+    </div>
+
+    <!-- Furniture tab -->
+    <div class="tc on" id="tc-furn">
+      <div class="grid">
+        <div class="itn" data-e="🛏️" data-n="Bed"         data-s="72">🛏️<span class="ilbl">Bed</span></div>
+        <div class="itn" data-e="🪑" data-n="Stoel"       data-s="42">🪑<span class="ilbl">Stoel</span></div>
+        <div class="itn" data-e="🛋️" data-n="Bank"        data-s="68">🛋️<span class="ilbl">Bank</span></div>
+        <div class="itn" data-e="🖥️" data-n="Bureau"      data-s="56">🖥️<span class="ilbl">Bureau</span></div>
+        <div class="itn" data-e="📚" data-n="Boekenkast"  data-s="52">📚<span class="ilbl">Boekenkast</span></div>
+        <div class="itn" data-e="🗄️" data-n="Kast"        data-s="58">🗄️<span class="ilbl">Kledingkast</span></div>
+        <div class="itn" data-e="🪞" data-n="Spiegel"     data-s="48">🪞<span class="ilbl">Spiegel</span></div>
+        <div class="itn" data-e="💡" data-n="Lamp"        data-s="38">💡<span class="ilbl">Lamp</span></div>
+        <div class="itn" data-e="🛁" data-n="Bad"         data-s="62">🛁<span class="ilbl">Badkuip</span></div>
+        <div class="itn" data-e="🪴" data-n="Bloempot"    data-s="40">🪴<span class="ilbl">Bloempot</span></div>
+        <div class="itn" data-e="🖼️" data-n="Poster"      data-s="46">🖼️<span class="ilbl">Poster</span></div>
+        <div class="itn" data-e="🧺" data-n="Mand"        data-s="40">🧺<span class="ilbl">Mand</span></div>
+      </div>
+    </div>
+
+    <!-- Decoration tab -->
+    <div class="tc" id="tc-deco">
+      <div class="grid">
+        <div class="itn" data-e="🌿"  data-n="Plant"      data-s="40">🌿<span class="ilbl">Plant</span></div>
+        <div class="itn" data-e="✨"  data-n="Lichtjes"   data-s="52">✨<span class="ilbl">Lichtjes</span></div>
+        <div class="itn" data-e="🧸"  data-n="Knuffel"    data-s="40">🧸<span class="ilbl">Knuffel</span></div>
+        <div class="itn" data-e="🎨"  data-n="Schilderij" data-s="46">🎨<span class="ilbl">Schilderij</span></div>
+        <div class="itn" data-e="⭐"  data-n="Ster"       data-s="36">⭐<span class="ilbl">Ster</span></div>
+        <div class="itn" data-e="🎀"  data-n="Strik"      data-s="36">🎀<span class="ilbl">Strik</span></div>
+        <div class="itn" data-e="🦋"  data-n="Vlinder"    data-s="36">🦋<span class="ilbl">Vlinder</span></div>
+        <div class="itn" data-e="🌸"  data-n="Bloem"      data-s="36">🌸<span class="ilbl">Bloem</span></div>
+        <div class="itn" data-e="🌈"  data-n="Regenboog"  data-s="52">🌈<span class="ilbl">Regenboog</span></div>
+        <div class="itn" data-e="💐"  data-n="Boeketje"   data-s="40">💐<span class="ilbl">Boeketje</span></div>
+        <div class="itn" data-e="🪩"  data-n="Discobal"   data-s="40">🪩<span class="ilbl">Discobal</span></div>
+        <div class="itn" data-e="🎠"  data-n="Carrousel"  data-s="44">🎠<span class="ilbl">Carrousel</span></div>
+        <div class="itn" data-e="🦄"  data-n="Eenhoorn"   data-s="46">🦄<span class="ilbl">Eenhoorn</span></div>
+        <div class="itn" data-e="🌙"  data-n="Maan"       data-s="38">🌙<span class="ilbl">Maan</span></div>
+        <div class="itn" data-e="🎪"  data-n="Tent"       data-s="52">🎪<span class="ilbl">Speeltent</span></div>
+        <div class="itn" data-e="🎭"  data-n="Theater"    data-s="40">🎭<span class="ilbl">Masker</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── ROOM ── -->
+  <div class="room-area">
+    <div class="room-wrap">
+      <div class="wall-top" id="wt"></div>
+      <div class="wall-left" id="wl"></div>
+      <div class="wall-right" id="wr"></div>
+      <div id="room"></div>
+    </div>
+  </div>
+
+  <!-- ── RIGHT PANEL ── -->
+  <div class="right">
+
+    <div class="sec">
+      <h4>🎨 Muurkleur</h4>
+      <div class="cgrid" id="wcols"></div>
+    </div>
+
+    <div class="div"></div>
+
+    <div class="sec">
+      <h4>🏠 Vloer</h4>
+      <div class="pgrid" id="fpats"></div>
+    </div>
+
+    <div class="div"></div>
+
+    <div class="sec" id="selpanel">
+      <h4>✏️ Geselecteerd</h4>
+      <button class="cbtn cb-del" onclick="deleteSel()">🗑️ Verwijderen</button>
+      <button class="cbtn cb-rot" onclick="rotateSel()">🔄 Draaien</button>
+      <button class="cbtn cb-big" onclick="scaleSel(1.25)">🔍 Groter</button>
+      <button class="cbtn cb-sml" onclick="scaleSel(0.8)">🔎 Kleiner</button>
+      <div class="div"></div>
+    </div>
+
+    <div class="tip">
+      💡 <strong>Tips:</strong><br>
+      Sleep items naar de kamer.<br>
+      Klik om te kiezen.<br>
+      <strong>DEL</strong> = wissen<br>
+      <strong>R</strong> = draaien<br>
+      <strong>Ctrl+Z</strong> = ongedaan
+    </div>
+
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════
+//  STATE
+// ══════════════════════════════════════
+let items   = [];   // { el, e, n, s, x, y, rot, sc }
+let sel     = null; // selected element
+let drag    = null; // item being dragged inside room
+let dox = 0, doy = 0;
+let fromSB  = false;
+let sbE='', sbN='', sbS=55;
+let hist    = [];
+
+const room  = document.getElementById('room');
+const ghost = document.getElementById('ghost');
+
+// ══════════════════════════════════════
+//  WALL & FLOOR DATA
+// ══════════════════════════════════════
+const WALLS = [
+  '#FFB3D1','#FF6B9D','#FFD4E8',
+  '#D4AAFF','#B06DFF','#EDE0FF',
+  '#B3E5FF','#5BC8FF','#D4F4FF',
+  '#B3F0C8','#5FDB8A','#D4FFE0',
+  '#FFE89B','#FFD93D','#FFF4CC',
+  '#FFB380','#FF9142','#FFD4B3',
+  '#FFFFFF','#F0F0F0','#CCCCCC',
+  '#2D2A5E','#7B78B5','#4A4785',
+];
+
+const FLOORS = [
+  { n:'Geel',    bc:'#FFF3B0', bi:'none',                                                                                                                                                 bs:'auto'    },
+  { n:'Roze',    bc:'#FFE5F0', bi:'none',                                                                                                                                                 bs:'auto'    },
+  { n:'Blauw',   bc:'#E5F4FF', bi:'none',                                                                                                                                                 bs:'auto'    },
+  { n:'Groen',   bc:'#E5FFF0', bi:'none',                                                                                                                                                 bs:'auto'    },
+  { n:'Lila',    bc:'#F0E8FF', bi:'none',                                                                                                                                                 bs:'auto'    },
+  { n:'Hout',    bc:'#D4A574', bi:'repeating-linear-gradient(90deg,rgba(0,0,0,.08) 0,rgba(0,0,0,.08) 1px,transparent 1px,transparent 48px)',                                             bs:'auto'    },
+  { n:'Tegels',  bc:'#f2f2f2', bi:'repeating-conic-gradient(#e4e4e4 0% 25%,#fff 0% 50%)',                                                                                                bs:'40px 40px'},
+  { n:'Strepen', bc:'#FFE5F0', bi:'repeating-linear-gradient(45deg,#FFB3D1 0,#FFB3D1 8px,#FFE5F0 8px,#FFE5F0 18px)',                                                                     bs:'auto'    },
+  { n:'Stippen', bc:'#E8F4FF', bi:'radial-gradient(circle,#B3D9FF 3px,transparent 3px)',                                                                                                  bs:'20px 20px'},
+  { n:'Ruit',    bc:'#FFF0F0', bi:'repeating-linear-gradient(45deg,#FFD4E8 0,#FFD4E8 2px,transparent 2px,transparent 14px),repeating-linear-gradient(-45deg,#FFD4E8 0,#FFD4E8 2px,transparent 2px,transparent 14px)', bs:'auto'},
+];
+
+// ══════════════════════════════════════
+//  INIT COLORS
+// ══════════════════════════════════════
+function initColors() {
+  const wg = document.getElementById('wcols');
+  WALLS.forEach((c, i) => {
+    const sw = document.createElement('div');
+    sw.className = 'csw' + (i===0 ? ' on' : '');
+    sw.style.background = c;
+    sw.title = c;
+    sw.onclick = () => {
+      wg.querySelectorAll('.csw').forEach(s => s.classList.remove('on'));
+      sw.classList.add('on');
+      setWall(c);
+    };
+    wg.appendChild(sw);
+  });
+
+  const fg = document.getElementById('fpats');
+  FLOORS.forEach((p, i) => {
+    const sw = document.createElement('div');
+    sw.className = 'psw' + (i===0 ? ' on' : '');
+    sw.style.backgroundColor = p.bc;
+    if (p.bi !== 'none') sw.style.backgroundImage = p.bi;
+    sw.style.backgroundSize = p.bs;
+    sw.innerHTML = `<span>${p.n}</span>`;
+    sw.onclick = () => {
+      fg.querySelectorAll('.psw').forEach(s => s.classList.remove('on'));
+      sw.classList.add('on');
+      setFloor(p);
+    };
+    fg.appendChild(sw);
+  });
+}
+
+function setWall(c) {
+  document.documentElement.style.setProperty('--wall', c);
+  ['wt','wl','wr'].forEach(id => document.getElementById(id).style.background = c);
+}
+
+function setFloor(p) {
+  room.style.backgroundColor = p.bc;
+  room.style.backgroundImage = p.bi === 'none' ? '' : p.bi;
+  room.style.backgroundSize  = p.bs;
+}
+
+// ══════════════════════════════════════
+//  TABS
+// ══════════════════════════════════════
+function switchTab(name, btn) {
+  document.querySelectorAll('.tab').forEach(b => b.classList.remove('on'));
+  document.querySelectorAll('.tc').forEach(c => c.classList.remove('on'));
+  btn.classList.add('on');
+  document.getElementById('tc-' + name).classList.add('on');
+}
+
+// ══════════════════════════════════════
+//  SIDEBAR DRAG START
+// ══════════════════════════════════════
+document.querySelectorAll('.itn').forEach(btn => {
+  btn.addEventListener('mousedown', e => {
+    e.preventDefault();
+    fromSB = true;
+    sbE = btn.dataset.e;
+    sbN = btn.dataset.n;
+    sbS = parseInt(btn.dataset.s);
+    ghost.textContent = sbE;
+    ghost.style.display = 'block';
+    ghost.style.left = e.clientX + 'px';
+    ghost.style.top  = e.clientY + 'px';
+    document.body.style.cursor = 'grabbing';
+  });
+});
+
+// ══════════════════════════════════════
+//  MOUSE MOVE
+// ══════════════════════════════════════
+document.addEventListener('mousemove', e => {
+  if (fromSB) {
+    ghost.style.left = e.clientX + 'px';
+    ghost.style.top  = e.clientY + 'px';
+    const r = room.getBoundingClientRect();
+    room.classList.toggle('dov',
+      e.clientX >= r.left && e.clientX <= r.right &&
+      e.clientY >= r.top  && e.clientY <= r.bottom);
+  }
+
+  if (drag) {
+    const d = items.find(i => i.el === drag);
+    if (!d) return;
+    const r = room.getBoundingClientRect();
+    let nx = e.clientX - r.left - dox;
+    let ny = e.clientY - r.top  - doy;
+    nx = Math.max(0, Math.min(nx, room.offsetWidth  - drag.offsetWidth));
+    ny = Math.max(0, Math.min(ny, room.offsetHeight - drag.offsetHeight));
+    drag.style.left = nx + 'px';
+    drag.style.top  = ny + 'px';
+    d.x = nx; d.y = ny;
+  }
+});
+
+// ══════════════════════════════════════
+//  MOUSE UP
+// ══════════════════════════════════════
+document.addEventListener('mouseup', e => {
+  if (fromSB) {
+    ghost.style.display = 'none';
+    room.classList.remove('dov');
+    document.body.style.cursor = '';
+
+    const r = room.getBoundingClientRect();
+    if (e.clientX >= r.left && e.clientX <= r.right &&
+        e.clientY >= r.top  && e.clientY <= r.bottom) {
+      const x = e.clientX - r.left - sbS / 2;
+      const y = e.clientY - r.top  - sbS / 2;
+      placeItem(sbE, sbN, sbS, x, y);
+    }
+    fromSB = false;
+  }
+
+  if (drag) {
+    drag.style.zIndex = drag === sel ? '20' : '10';
+    drag = null;
+    document.body.style.cursor = '';
+  }
+});
+
+// ══════════════════════════════════════
+//  PLACE ITEM
+// ══════════════════════════════════════
+function placeItem(e, n, s, x, y, rot=0, sc=1, quiet=false) {
+  if (!quiet) saveHist();
+
+  const el = document.createElement('div');
+  el.className = 'pi' + (quiet ? '' : ' pop');
+  el.style.cssText = `left:${x}px;top:${y}px;font-size:${s}px;transform:rotate(${rot}deg) scale(${sc})`;
+  el.textContent = e;
+
+  if (!quiet) setTimeout(() => el.classList.remove('pop'), 400);
+
+  const d = { el, e, n, s, x, y, rot, sc };
+  items.push(d);
+
+  el.addEventListener('mousedown', ev => {
+    if (ev.button !== 0) return;
+    ev.stopPropagation();
+    selectEl(el);
+    const r = room.getBoundingClientRect();
+    drag = el;
+    dox  = ev.clientX - r.left - d.x;
+    doy  = ev.clientY - r.top  - d.y;
+    el.style.zIndex = '30';
+    document.body.style.cursor = 'grabbing';
+  });
+
+  // Double-click to delete
+  el.addEventListener('dblclick', ev => {
+    ev.stopPropagation();
+    deleteSel();
+  });
+
+  room.appendChild(el);
+
+  if (!quiet) {
+    selectEl(el);
+    const r = room.getBoundingClientRect();
+    burst(x + r.left + s/2, y + r.top + s/2);
+  }
+}
+
+// ══════════════════════════════════════
+//  SELECT
+// ══════════════════════════════════════
+function selectEl(el) {
+  if (sel) sel.classList.remove('sel');
+  sel = el;
+  document.getElementById('selpanel').style.display = el ? 'block' : 'none';
+  if (el) el.classList.add('sel');
+}
+
+room.addEventListener('mousedown', e => {
+  if (e.target === room) selectEl(null);
+});
+
+// ══════════════════════════════════════
+//  CONTROLS
+// ══════════════════════════════════════
+function deleteSel() {
+  if (!sel) return;
+  saveHist();
+  const i = items.findIndex(d => d.el === sel);
+  if (i > -1) items.splice(i, 1);
+  sel.remove();
+  selectEl(null);
+}
+
+function rotateSel() {
+  if (!sel) return;
+  const d = items.find(d => d.el === sel);
+  if (!d) return;
+  d.rot = (d.rot + 45) % 360;
+  sel.style.transform = `rotate(${d.rot}deg) scale(${d.sc})`;
+}
+
+function scaleSel(f) {
+  if (!sel) return;
+  const d = items.find(d => d.el === sel);
+  if (!d) return;
+  d.sc = Math.max(.3, Math.min(3.5, d.sc * f));
+  sel.style.transform = `rotate(${d.rot}deg) scale(${d.sc})`;
+}
+
+// ══════════════════════════════════════
+//  HISTORY
+// ══════════════════════════════════════
+function saveHist() {
+  hist.push(items.map(d => ({ e:d.e, n:d.n, s:d.s, x:d.x, y:d.y, rot:d.rot, sc:d.sc })));
+  if (hist.length > 20) hist.shift();
+}
+
+function undo() {
+  if (!hist.length) return;
+  const prev = hist.pop();
+  items.forEach(d => d.el.remove());
+  items = [];
+  selectEl(null);
+  prev.forEach(d => placeItem(d.e, d.n, d.s, d.x, d.y, d.rot, d.sc, true));
+}
+
+function clearRoom() {
+  if (!items.length) return;
+  saveHist();
+  items.forEach(d => d.el.remove());
+  items = [];
+  selectEl(null);
+}
+
+// ══════════════════════════════════════
+//  SAVE
+// ══════════════════════════════════════
+function saveRoom() {
+  const hadSel = sel;
+  if (sel) sel.classList.remove('sel');
+
+  if (typeof html2canvas !== 'undefined') {
+    // Temporarily show walls in screenshot by wrapping
+    const wrap = document.querySelector('.room-wrap');
+    html2canvas(wrap, { scale: 2, useCORS: true, backgroundColor: null }).then(canvas => {
+      const a = document.createElement('a');
+      a.download = 'Tamar-Kamer.png';
+      a.href = canvas.toDataURL('image/png');
+      a.click();
+      if (hadSel) hadSel.classList.add('sel');
+      burst(window.innerWidth/2, window.innerHeight/3, 18);
+    });
+  } else {
+    alert('Gebruik een screenshot om je kamer op te slaan! (PrintScreen of Shift+Cmd+4 op Mac)');
+    if (hadSel) hadSel.classList.add('sel');
+  }
+}
+
+// ══════════════════════════════════════
+//  CONFETTI
+// ══════════════════════════════════════
+const POOL = ['🌟','✨','🎉','💫','🌈','🎀','💕','🎊','⭐','🦄','🌸'];
+
+function burst(cx, cy, n=6) {
+  for (let i = 0; i < n; i++) {
+    setTimeout(() => {
+      const el = document.createElement('div');
+      el.className = 'cft';
+      el.textContent = POOL[Math.floor(Math.random() * POOL.length)];
+      el.style.left = (cx + (Math.random()-.5)*130) + 'px';
+      el.style.top  = cy + 'px';
+      document.body.appendChild(el);
+      setTimeout(() => el.remove(), 1200);
+    }, i * 75);
+  }
+}
+
+// ══════════════════════════════════════
+//  KEYBOARD
+// ══════════════════════════════════════
+document.addEventListener('keydown', e => {
+  if (e.target.tagName === 'INPUT') return;
+  if ((e.key === 'Delete' || e.key === 'Backspace') && sel) deleteSel();
+  if ((e.key === 'r' || e.key === 'R') && sel) rotateSel();
+  if (e.ctrlKey && e.key === 'z') { e.preventDefault(); undo(); }
+});
+
+// ══════════════════════════════════════
+//  STARTUP
+// ══════════════════════════════════════
+initColors();
+setTimeout(() => burst(window.innerWidth/2, 80, 14), 700);
+</script>
+</body>
+</html>
